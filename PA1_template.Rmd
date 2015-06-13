@@ -8,18 +8,109 @@ output:
 
 ## Loading and preprocessing the data
 
-
+```{r readdata, cache=TRUE}
+  #setwd("E:/Development/R/repData/RepData_PeerAssessment1")
+  if (!file.exists("activity"))
+  {
+    dir.create("activity")
+    if (file.exists("activity.zip"))
+    {
+      message("Unzipping dataset")
+      unzip("activity.zip", exdir= "./activity")
+    }
+  }
+  stepData <- read.csv("activity/activity.csv")
+  stepData$date <- as.Date(stepData$date)
+  
+  names(stepData) <- c("Steps","Date","Interval")
+```
 
 ## What is mean total number of steps taken per day?
+```{r aggregatestepsperday, echo =FALSE}
+  
+stepsByDay <- aggregate(x = stepData$Steps , by = list(stepData$Date), FUN = sum ,na.rm=TRUE)
+names(stepsByDay) <- c("Date","Steps")
+hist(stepsByDay$Steps, xlab="number of steps", main="Total number of steps taken each day",col="gray")
 
+```
+
+* The mean total number of steps taken per day is `r round(mean(stepsByDay$Steps),digits=4)` steps.  
+* The median total number of steps taken per day is `r median(stepsByDay$Steps)` steps.
+
+###Daily Mean
+
+```{r dailymean, echo =TRUE}
+#split data by date
+dailySteps <- split(stepData$Steps,stepData$Date)
+dailyMean <- sapply(dailySteps,FUN=mean)
+# Convert to DF for formatting and printing
+meanDF <- data.frame(Date= names(dailyMean), mean = dailyMean,row.names = NULL)
+names(meanDF) <- c("Date","Mean")
+print(meanDF, digits=4)
+```
+
+###Daily Median
+```{r dailymedian, echo =TRUE}
+dailyMeadian <- sapply(dailySteps,FUN=median)
+medianDF <- data.frame(Date= names(dailyMeadian), median = dailyMeadian,row.names = NULL)
+names(medianDF) <- c("Date","Median")
+print(medianDF, digits=4)
+
+```
 
 
 ## What is the average daily activity pattern?
 
+```{r averageactivitypatter}
+
+intervalsplit <- split(stepData$Steps,stepData$Interval)
+meanStepsInterval <- sapply(intervalsplit, mean,na.rm=TRUE)
+plot(names(meanStepsInterval), meanStepsInterval , type = "l", 
+main = "Mean steps per interval for all days",  xlab = "Interval", ylab = "Mean # of steps "  )
+#Find the Maximum Value and interval
+maxIntervalValue <- max(meanStepsInterval, na.rm = TRUE)
+maxInterval <- names(meanStepsInterval)[which.max(meanStepsInterval)]
+
+```
+The 5-minute interval (on average) occurs at `r maxInterval ` and contains  `r round(maxIntervalValue,digits=4)` steps
 
 
 ## Imputing missing values
 
+The number of missing values is `r sum(is.na(stepData$Steps))`
 
+Missing values will be replaced by the mean value for that 5-minute interval
+
+```{r imputmissingvalues }
+stepsByDayMean <- aggregate(Steps ~ Interval, FUN=mean,data=stepData)
+stepsMerged <- merge (x=stepData,y=stepsByDayMean,by="Interval")
+stepsMerged$NewSteps <- ifelse(is.na(stepsMerged$Steps.x),stepsMerged$Steps.y,stepsMerged$Steps.x)
+stepsNew <- stepsMerged[c("NewSteps","Date","Interval")]
+stepsNewByDay <- aggregate(x = stepsNew$NewSteps , by = list(stepsNew$Date), FUN = sum ,na.rm=TRUE)
+names(stepsNewByDay) <- c("Date","Steps")
+hist(stepsNewByDay$Steps, xlab="number of steps", main="Total number of steps taken each day",col="gray")
+
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+
+```{r compareweekdaysweekends }
+#Get Weekend averages
+weekendStepData <- stepData[weekdays(stepData$Date) %in% c("Saturday","Sunday"), ]
+weekendintervalsplit <- split(weekendStepData$Steps,weekendStepData$Interval)
+weekendmeanStepsInterval <- sapply(weekendintervalsplit, mean,na.rm=TRUE)
+
+#Get Weekday averages
+weekdayStepData <- stepData[!(weekdays(stepData$Date) %in% c("Saturday","Sunday")), ]
+weekdayintervalsplit <- split(weekdayStepData$Steps,weekdayStepData$Interval)
+weekdaymeanStepsInterval <- sapply(weekdayintervalsplit, mean,na.rm=TRUE)
+
+plot(names(weekdayintervalsplit), weekdaymeanStepsInterval , type = "l", 
+main = "Mean steps per interval comparison weekends and Weekdays",  xlab = "Interval", 
+ylab = "Mean # of steps ",col="blue"  )
+lines(names(weekendintervalsplit),weekendmeanStepsInterval,col="red")
+legend("topright", c("Weekday", "Weekend"), col = c("blue", "red"), lty = 1)
+
+```
+
