@@ -106,11 +106,12 @@ weekdayStepData <- stepData[!(weekdays(stepData$Date) %in% c("Saturday","Sunday"
 weekdayintervalsplit <- split(weekdayStepData$Steps,weekdayStepData$Interval)
 weekdaymeanStepsInterval <- sapply(weekdayintervalsplit, mean,na.rm=TRUE)
 
-plot(names(weekdayintervalsplit), weekdaymeanStepsInterval , type = "l", 
-main = "Mean steps per interval comparison weekends and Weekdays",  xlab = "Interval", 
+plot(names(meanStepsInterval), meanStepsInterval , type = "l", 
+main = "Mean steps per interval comparison Weekends and Weekdays",  xlab = "Interval", 
 ylab = "Mean # of steps ",col="blue"  )
+lines(names(weekdayintervalsplit), weekdaymeanStepsInterval , col="green")
 lines(names(weekendintervalsplit),weekendmeanStepsInterval,col="red")
-legend("topright", c("Weekday", "Weekend"), col = c("blue", "red"), lty = 1)
+legend("topright", c("All","Weekday", "Weekend"), col = c("blue","green", "red"), lty = 1)
 
 ```
 
